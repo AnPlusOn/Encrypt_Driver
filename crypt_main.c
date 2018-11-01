@@ -11,6 +11,17 @@
 
 int main(int argc, char** argv)
 {
+  if(argc<3)
+    {
+      printf("Not enough arguments\n");
+      return -1;
+    }
+
+  char command[1024];
+  strcpy(command, argv[2]);
+  if(strcmp(command, CREATE) ==  0)
+    {
+  
   char dev_id[1024];
   char dev_name1[1024];
   char dev_name2[1024];
@@ -26,20 +37,27 @@ int main(int argc, char** argv)
       .decrypt_name = dev_name2,
       .key = 0
   };
-
-  int control_file =open( ENCRYPTCTL_PATH, O_RDWR );
+  printf("device names %s, %s\n", dev_name1, dev_name2);
+   int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
   if(control_file< 0)
     {
-      perror("open");
-      return -1;
-    }
-  
-  if( ioctl(control_file,CREATE_DEV_CODE, 0 ) < 0)
-    {
+     perror("open");
+     return -1;
+   }
+  printf("open file: %d\n", control_file);
+   if( ioctl(control_file,CREATE_DEV_CODE, &my_encrypt) < 0)
+   {
       perror("ioctl");
       return -1;
+   }
+   sleep(10);
+   if( close(control_file)<0)
+     {
+       perror("close");
+       return -1;
+     }
+   printf("File closed. Done.\n");
     }
-  
-  close(control_file);
-  return 0;
+   return 0;
+  //  return 0;
 }
