@@ -38,18 +38,26 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       return -1;
     }
   const encryptctl_struct user_dev_info[sizeof(encryptctl_struct)];
-  copy_from_user( &user_dev_info,(const encryptctl_struct*) dev_info, sizeof(encryptctl_struct) );
+   int bytes_read =   copy_from_user( &user_dev_info,(const encryptctl_struct*) dev_info, sizeof(encryptctl_struct) );
+   while(bytes_read<sizeof(encryptctl_struct))
+     {
+       bytes_read +=   copy_from_user( &user_dev_info,(const encryptctl_struct*) dev_info, sizeof(encryptctl_struct) );
+     }
+   printk("copy_from_user: %d", bytes_read);
   switch(request)
     {
     case CREATE_DEV_CODE:
       printk("ioctl LIVES!");
       create_char_dev(0,user_dev_info->encrypt_name, &fops);
       create_char_dev(0,user_dev_info->decrypt_name, &fops);
+      break;
     case DESTROY_DEV_CODE:
       destroy_char_dev(user_dev_info->Major ,user_dev_info->decrypt_name);
       destroy_char_dev(user_dev_info->Major ,user_dev_info->encrypt_name);
+      break;
     default:
       printk("Invalid request for cryptctl");
+      break;
     }
   printk("ioctl is done!");
   return 0;
@@ -69,7 +77,7 @@ int init_module(void)
 void cleanup_module(void)
 {
   unregister_chrdev(Major, CRYPTCTL_NAME);
-  printk("Device was unregustered.\nSee ya later alligator");
+  printk("Device was unregustered. See ya later alligator");
   return 0;
 }
 static int  create_char_dev(unsigned int major, const char* dev_name, const struct  file_operations* fops)
@@ -83,7 +91,7 @@ static int  create_char_dev(unsigned int major, const char* dev_name, const stru
      printk("There was an error registering this device. Please try again.\n");
      return Major;
    }
- printk("New Registered device:(%s, %d)\n", dev_name, Major);
+ printk("New Registered device:(%s, %d)", dev_name, Major);
  return Major;
 }
 static int destroy_char_dev(unsigned int major, const char* dev_name)

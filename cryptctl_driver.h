@@ -6,7 +6,7 @@
 #define DESTROY_DEV_CODE 5002
 #define ENCRYPT_DEV_NAME  "cryptEncrypt"
 #define DECRYPT_DEV_NAME "cryptDecrypt"
-#define ENCRYPTCTL_PATH "/dev/crypctl" 
+#define ENCRYPTCTL_PATH "/dev/cryptctl" 
 #define DESTROY "d"
 #define CREATE "c"
 
