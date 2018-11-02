@@ -3,6 +3,7 @@
 #include<linux/fs.h>
 #include<linux/uaccess.h>
 #include<linux/vmalloc.h>
+#include<linux/string.h>
 #include "cryptctl_driver.h" 
 
 //#include<stdio.h>
@@ -11,6 +12,7 @@ static int encrypt_open(struct inode *, struct file *);
 static int create_char_dev(unsigned int , const char* , const struct file_operations* );
 static int destroy_char_dev(unsigned int, const char* );
 static long char_dev_ctl(struct file *, unsigned int, unsigned long );
+int create_pair(device_record*,const struct file_operations* );
 static int Major;
 static int Pair_Major = 0;
 static int open_count = 0;
@@ -41,8 +43,8 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       return -1;
     }
   device_record  user_dev_info;
-  printk("sizeof:%d\n",sizeof(encryptctl_struct) );
-   int bytes_read =   copy_from_user( &user_dev_info,(const device_record*) dev_info, sizeof(encryptctl_struct) );
+  printk("sizeof:%d\n",sizeof(device_record) );
+   int bytes_read =   copy_from_user( &user_dev_info,(const device_record*) dev_info, sizeof(device_record) );
    // while(bytes_read<sizeof(encryptctl_struct))
    // {
        //  bytes_read +=   copy_from_user( &user_dev_info,(const encryptctl_struct*) dev_info, sizeof(encryptctl_struct) );
@@ -54,11 +56,11 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       printk("ioctl LIVES!");
       //      create_char_dev(0,user_dev_info.encrypt_name, &fops);
       // create_char_dev(0,user_dev_info.decrypt_name, &fops);
-      create_pair(&user_dev_info, &fops)
+      create_pair(&user_dev_info, &fops);
       break;
     case DESTROY_DEV_CODE:
-      destroy_char_dev(user_dev_info.Major ,user_dev_info.decrypt_name);
-      destroy_char_dev(user_dev_info.Major ,user_dev_info.encrypt_name);
+      destroy_char_dev(user_dev_info.major ,user_dev_info.decrypt_name);
+      destroy_char_dev(user_dev_info.major ,user_dev_info.encrypt_name);
       break;
     default:
       printk("Invalid request for cryptctl");
@@ -105,17 +107,19 @@ void cleanup_module(void)
   printk("Device was unregustered. See ya later alligator");
   return 0;
 }
+
 int create_pair(device_record* pair_info,const struct file_operations* fops )
 {
   create_char_dev(Pair_Major,pair_info->encrypt_name, fops );
   create_char_dev(Pair_Major,pair_info->decrypt_name, fops );
   int  dev_id = pair_info->device_id;
+  memcpy(&(device_table[dev_id]), pair_info, sizeof(device_record));
   device_table[dev_id].free = 0;
-  device_table[dev_id].major = Pair_Major;
-  device_table[dev_id].encrypt_name = pair_info->encrypt_name;
-  device_table[dev_id].decrypt_name = pair_info->decrypt_name;
-  device_table[dev_id].key_stream = pair_info->key_stream;
-  printk("pair:(%d,%s,%s,%s)",device_table[dev_id].major, device_table[dev_id].encrypt_name,device_table[dev_id].decrypt_name,device_table[dev_id].KeyStream  );
+  // device_table[dev_id].major = Pair_Major;
+  // strcpy( device_table[dev_id].encrypt_name, pair_info->encrypt_name;
+  // device_table[dev_id].decrypt_name = pair_info->decrypt_name;
+  // device_table[dev_id].key_stream = pair_info->key_stream;
+  printk("pair:(%d,%s,%s,%s)",device_table[dev_id].major, device_table[dev_id].encrypt_name,device_table[dev_id].decrypt_name,device_table[dev_id].key_stream  );
   return 0;
 }
 int destroy_pair(device_record* pair_info)
@@ -124,9 +128,6 @@ int destroy_pair(device_record* pair_info)
 }
 static int create_char_dev(unsigned int major, const char* dev_name, const struct  file_operations* fops)
 {
-  // char device_name[1024];
-  //copy_from_user(device_name, dev_name, dev_name_size);
-  //  device_name[dev_name_size] = '\0';
  Major =  register_chrdev(major,dev_name, fops);
  if(Major<0)
    {
@@ -140,8 +141,7 @@ static int destroy_char_dev(unsigned int major, const char* dev_name)
 {
   // char device_name[1024];
   // copy_from_user(device_name, dev_name, dev_name_size);
-  //  device_name[dev_name_size] = '\0';
-   unregister_chrdev(Major, dev_name);
+    unregister_chrdev(Major, dev_name);
   //  if(ret<0)
   // {
       //  printk("There was a problem unregistering the device");

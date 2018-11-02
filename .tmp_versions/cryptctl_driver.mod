@@ -1,3 +1,3 @@
-/home/superuser/Encrypt_Driver-master/cryptctl_driver.ko
-/home/superuser/Encrypt_Driver-master/cryptctl_driver.o
+/home/superuser/Encrypt_Driver/cryptctl_driver.ko
+/home/superuser/Encrypt_Driver/cryptctl_driver.o
 
