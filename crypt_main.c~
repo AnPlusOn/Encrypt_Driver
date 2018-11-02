@@ -31,11 +31,9 @@ int main(int argc, char** argv)
   strcat(dev_name1, dev_id);
   strcat(dev_name2, dev_id);
   char key[];
-  device_record my_encrypt;
+  encryptctl_struct my_encrypt;
   strcpy( my_encrypt.encrypt_name, dev_name1);
   strcpy( my_encrypt.decrypt_name, dev_name2);
-  my_encrypt.device_id = atoi(dev_id);
-  
   printf("device names %s, %s\n",my_encrypt.encrypt_name, my_encrypt.decrypt_name);
    int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
   if(control_file< 0)

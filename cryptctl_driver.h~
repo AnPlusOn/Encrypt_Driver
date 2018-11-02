@@ -11,13 +11,22 @@
 #define CREATE "c"
 #define DEVICE_RECORDS_SIZE 1024
 #define FREE_RECORD -1
+
+typedef  struct
+{
+  char encrypt_name[16];
+  char decrypt_name[16];
+  short device_id;
+  int Major;
+  char key[32];
+} encryptctl_struct;
 typedef struct
 {
-  char  free; //  1 if it's free, 0 otherwise.
+  char  free;
   short device_id; // This could be used as the index for that device!!! This will also be used as the minor of the device
   short major;
   char encrypt_name[16];
   char decrypt_name[16];
-  char key_stream[32];  //Size to be decided
+  char keyStream[32];  //Size to be decided
 }device_record;
 #endif
