@@ -25,15 +25,17 @@ int main(int argc, char** argv)
   char dev_id[1024];
   char dev_name1[1024];
   char dev_name2[1024];
+  char key[32];
   strcpy(dev_name1,ENCRYPT_DEV_NAME );
   strcpy(dev_name2,DECRYPT_DEV_NAME );
   strcpy(dev_id, argv[1]);
+  strcpy(key, argv[3]);
   strcat(dev_name1, dev_id);
   strcat(dev_name2, dev_id);
-  char key[];
   device_record my_encrypt;
   strcpy( my_encrypt.encrypt_name, dev_name1);
   strcpy( my_encrypt.decrypt_name, dev_name2);
+  strcpy(my_encrypt.key_stream, key);
   my_encrypt.device_id = atoi(dev_id);
   
   printf("device names %s, %s\n",my_encrypt.encrypt_name, my_encrypt.decrypt_name);
