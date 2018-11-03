@@ -5,6 +5,10 @@
 #include<linux/vmalloc.h>
 #include<linux/string.h>
 #include "cryptctl_driver.h" 
+#include<linux/cdev.h>
+#include<linux/device.h>
+#include<linux/kdev_t.h>
+
 
 //#include<stdio.h>
 //#inc
@@ -18,6 +22,7 @@ static int Pair_Major = 0;
 static int open_count = 0;
 static dev_t cryptctl_dev = 0;
 static struct class* crypt_class;
+static struct cdev cryptctl;
 static device_record* device_table = NULL;
 MODULE_LICENSE("Dual BSD/GPL");
 static const struct file_operations fops =
@@ -95,11 +100,27 @@ int init_module(void)
 {
   init_device_table();
   // Major =  create_char_dev(0,CRYPTCTL_NAME, &fops);
-  if(alloc_chrdev_region(&cryptctl_dev, 0, 1, CRYPTCTL_NAME)<0)
+  if(alloc_chrdev_region(&cryptctl_dev, 0, 5, CRYPTCTL_NAME)<0) //this writes  the device to /proc/devices
    {
      printk("There was an error registering this device\n");
      return -1;
    }
+  cdev_init(&cryptctl,&fops);
+  if(cdev_add(&cryptctl, cryptctl_dev, 1)<0)
+    {
+      printk(KERN_INFO"There was a problem adding this device :(");
+      return -1;
+    }
+  if( (crypt_class = class_create(THIS_MODULE, "crypt_class")) == NULL)
+    {
+      printk(KERN_INFO "There was a problem creating the class");
+      return -1;
+    }
+  if ((device_create(crypt_class, NULL, cryptctl_dev, NULL, "cryptctl")) == NULL) //adds the device file to /dev
+    {
+      printk(KERN_INFO "There was a problem creating the device ");
+      return -1;
+    }
   printk(KERN_INFO"I think the device should be registered now:%d, %d\n", MAJOR(cryptctl_dev), MINOR(cryptctl_dev ));
  return 0;
 }
@@ -112,7 +133,7 @@ void cleanup_module(void)
 
 int create_pair(device_record* pair_info,const struct file_operations* fops )
 {
- Pair_Major =  create_char_dev(Major,pair_info->encrypt_name, fops );
+  Pair_Major =  create_char_dev(Major,pair_info->encrypt_name, fops );
   create_char_dev(Major,pair_info->decrypt_name, fops );
   int  dev_id = pair_info->device_id;
   memcpy(&(device_table[dev_id]), pair_info, sizeof(device_record));
@@ -125,18 +146,38 @@ int create_pair(device_record* pair_info,const struct file_operations* fops )
   return 0;
 }
 int destroy_pair(device_record* pair_info)
-{  
+{
+  
 }
 static int create_char_dev(unsigned int major, const char* dev_name, const struct  file_operations* fops)
 {
-   Major =  register_chrdev(major,dev_name, fops);
- if(Major<0)
-   {
-     printk("There was an error registering this device. Please try again.\n");
-     return Major;
-   }
- printk("New Registered device:(%s, %d)", dev_name, Major);
- return Major;
+  //   Major =  register_chrdev(major,dev_name, fops);
+  struct  cdev new_device;
+  //  if(alloc_chrdev_region(&cryptctl_dev, 1, 1, dev_name)<0)
+  //    {
+      //   printk(KERN_INFO"There was a problem creating this device--pair#1");
+      // return -1;
+      // }
+  dev_t new_dev = 0;
+  cdev_init(&new_device, fops);
+  if( cdev_add(&new_device,new_dev, 1 )<0)
+    {
+      printk(KERN_INFO "There was a problem with cdev_init pair#2");
+      return -1;
+    }
+  
+  // if(Major<0)
+  // {
+  //  printk("There was an error registering this device. Please try again.\n");
+  //  return Major;
+  // }
+  if(( device_create(crypt_class, NULL, cryptctl_dev, NULL, dev_name )) == NULL)
+    {
+      printk("there was a problem creating this device");
+      return -1;
+    }
+  printk("New Registered device:(%s, %d,%d)", dev_name, MAJOR(new_dev), MINOR(new_dev));
+  return Major;
 }
 static int destroy_char_dev(unsigned int major, const char* dev_name)
 {
@@ -146,7 +187,7 @@ static int destroy_char_dev(unsigned int major, const char* dev_name)
   //  if(ret<0)
   // {
       //  printk("There was a problem unregistering the device");
-      return -1;
+    //     return -1;
       // }
   printk("Device was successfully destroyed");
   return 0;

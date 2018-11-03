@@ -19,6 +19,8 @@ typedef struct
   char encrypt_name[16];
   char decrypt_name[16];
   char key_stream[32];  //Size to be decided
+  dev_t encrypt_device;
+  dev_t decrypt_device;
 }device_record;
 
 #endif
