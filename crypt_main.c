@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     }
 
   char command[1024];
-  strcpy(command, argv[2]);
+  strcpy(command, argv[1]);
   if(strcmp(command, CREATE) ==  0)
     {
   
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   char key[32];
   strcpy(dev_name1,ENCRYPT_DEV_NAME );
   strcpy(dev_name2,DECRYPT_DEV_NAME );
-  strcpy(dev_id, argv[1]);
+  strcpy(dev_id, argv[2]);
   strcpy(key, argv[3]);
   strcat(dev_name1, dev_id);
   strcat(dev_name2, dev_id);

@@ -16,6 +16,8 @@ int create_pair(device_record*,const struct file_operations* );
 static int Major;
 static int Pair_Major = 0;
 static int open_count = 0;
+static dev_t cryptctl_dev = 0;
+static struct class* crypt_class;
 static device_record* device_table = NULL;
 MODULE_LICENSE("Dual BSD/GPL");
 static const struct file_operations fops =
@@ -92,13 +94,13 @@ static  void init_device_table(void)
 int init_module(void)
 {
   init_device_table();
-  Major =  create_char_dev(0,CRYPTCTL_NAME, &fops);
- if(Major<0)
+  // Major =  create_char_dev(0,CRYPTCTL_NAME, &fops);
+  if(alloc_chrdev_region(&cryptctl_dev, 0, 1, CRYPTCTL_NAME)<0)
    {
      printk("There was an error registering this device\n");
      return -1;
    }
- printk("I think the device should be registered now:%d\n", Major);
+  printk(KERN_INFO"I think the device should be registered now:%d, %d\n", MAJOR(cryptctl_dev), MINOR(cryptctl_dev ));
  return 0;
 }
 void cleanup_module(void)
@@ -110,8 +112,8 @@ void cleanup_module(void)
 
 int create_pair(device_record* pair_info,const struct file_operations* fops )
 {
-  create_char_dev(Pair_Major,pair_info->encrypt_name, fops );
-  create_char_dev(Pair_Major,pair_info->decrypt_name, fops );
+ Pair_Major =  create_char_dev(Major,pair_info->encrypt_name, fops );
+  create_char_dev(Major,pair_info->decrypt_name, fops );
   int  dev_id = pair_info->device_id;
   memcpy(&(device_table[dev_id]), pair_info, sizeof(device_record));
   device_table[dev_id].free = 0;
@@ -123,12 +125,11 @@ int create_pair(device_record* pair_info,const struct file_operations* fops )
   return 0;
 }
 int destroy_pair(device_record* pair_info)
-{
-  
+{  
 }
 static int create_char_dev(unsigned int major, const char* dev_name, const struct  file_operations* fops)
 {
- Major =  register_chrdev(major,dev_name, fops);
+   Major =  register_chrdev(major,dev_name, fops);
  if(Major<0)
    {
      printk("There was an error registering this device. Please try again.\n");
