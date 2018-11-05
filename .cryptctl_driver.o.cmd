@@ -813,7 +813,6 @@ deps_/home/superuser/Encrypt_Driver/cryptctl_driver.o := \
     $(wildcard include/config/x86/smap.h) \
   arch/x86/include/asm/extable.h \
   arch/x86/include/asm/uaccess_64.h \
-  /home/superuser/Encrypt_Driver/cryptctl_driver.h \
   include/linux/cdev.h \
   include/linux/device.h \
     $(wildcard include/config/debug/devres.h) \
@@ -855,6 +854,8 @@ deps_/home/superuser/Encrypt_Driver/cryptctl_driver.o := \
     $(wildcard include/config/x86/dev/dma/ops.h) \
     $(wildcard include/config/pci/domains.h) \
   include/linux/pm_wakeup.h \
+  /home/superuser/Encrypt_Driver/kernel_space.h \
+  /home/superuser/Encrypt_Driver/cryptctl_driver.h \
 
 /home/superuser/Encrypt_Driver/cryptctl_driver.o: $(deps_/home/superuser/Encrypt_Driver/cryptctl_driver.o)
 
