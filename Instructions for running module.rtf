@@ -1,0 +1,76 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Regular;\f2\fnil\fcharset0 Menlo-Bold;
+\f3\fnil\fcharset0 Menlo-BoldItalic;}
+{\colortbl;\red255\green255\blue255;\red47\green180\blue29;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c20238\c73898\c14947;\csgray\c0;}
+\margl1440\margr1440\vieww25400\viewh16000\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf0 1. make/compile kernel module with the "make" command\
+2. insert the module with "sudo insmod cryptctl_driver.ko"\
+3. Check the kernel's log with the "dmesg" command:\
+	If the module was loaded successfully, you should see something like this at the end of the log:\
+				
+\f1\fs22 \cf2 \CocoaLigature0 [  163.501375] 
+\f2\b \cf3 cdev_init
+\f1\b0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 					[  163.501381] 
+\f2\b \cf3 cdev_add
+\f1\b0 \
+\cf2 					[  163.502710] \cf3 I think the device should be registered now:244, 0\
+\
+\
+The numbers inside the [] are just timestamps; these will be different for you.\
+If you don't see these messages anywhere, then reboot your kernel with "sudo reboot" 
+\f3\i\b immidiately
+\f1\i0\b0 .\
+Note: For me, to avoid any problems, when bizarre/unexpected things happen I always reboot the machine with "sudo reboot".\
+If you are not sure about something, reboot as soon as possible while you still have a handle on the kernel.\
+The last thing we want is to leave the kernel in a panic state.
+\f0\fs26 \cf0 \CocoaLigature1 \
+4. Assuming that you saw the right log messages, the driver(cryptctl) should be registered with the kernel. To confirm that the driver is loaded/registered in the kernel, run the following commands:\
+		1."ls /dev":\
+				This will show you a list of the special files that are linked to drivers and devces. In this directory you should see a file with the name "crypctl". This means that there is a file associated with the cryptctl 				devices and our user program (crypt_main.c) can open it and send commands to it via ioctl() calls.\
+		2."cat /proc/devices":\
+						   This file has all of the drivers registered in the system. After you insert the module, you should see the name of the device along with its major number.\
+						   It should look something like "cryptctl registration_number". In my machine, the major number is always 244. However, keep in mind, that if the kernel deems it so this could be a\
+						   different number. That major_number is the major number for our driver and all of the devices that the driver manages. As you can see in the third log message from step 3\
+   						   the string "
+\f1\fs22 \cf3 \CocoaLigature0 I think the device should be registered now:244, 0
+\f0\fs26 \cf0 \CocoaLigature1 "  has a 244 followed by a 0. These two are the major and minor. In this case, the major is 244 and the minor is 0.\
+						   The minor should always be 0 as it is the first device that is registered with this major number\
+\
+\
+		3. "ls /sys/dev/char":\
+						This directory is the MOST IMPORTANT of the three. This is the directory that the kernel uses to keep track of ALL of the devices currently registered in the system.\
+						When you look at the contents of this directory, there should a bunch of special directories with the format "major: minor".\
+						These directories represent all of the devices currently registered in the system. After loading the kernel, you should see the major number that you saw in /proc/devices.\
+\
+\
+5. Now we're ready to use our user program. As of right now, the user program cannot decrypt/encrypt text yet. It can only create and destroy devices. Compile the user program with "gcc crypt_main.c".\
+Once you've compiled crypt_main.c, run the executable with "sudo":\
+											                      To create a new device pair, we enter data in the following format "sudo. /a.out c id key_stream".\
+												               For example, if we were to run "sudo ./a.out c 0  123" the  driver will create the following devices:\
+												               /dev/cryptEncrypt0\
+										                               /dev/cryptDecrypt0\
+                                                                                                            To confirm that the devices have been  created and registered, check all of the directories from step 4. You should also see log messages similar to the\
+							                                                      ones in step 1.\
+									                                      To destroy a device, we enter data in the following format "sudo ./a.out d id"\
+												                For instance, if we wanted to destroy devices with id of "1", we'd do the following "sudo ./a.out d 0".\
+											                       To confirm that the devices have been destroyed, check all of the directories and files from step 4. There should no trace of your cryptEncrypt_id and  \
+                                      								                cryptDecrypt_id devices. Your cryptctl with minor number 0 device SHOULD still be there as we have not destroyed/unregistered it yet. \
+\
+6. Last but not least we unload the module. Unload the module with "sudo rmmod cryptctl_driver". This will unregister the driver device--your cryptctl driver.\
+\
+NOTE: DO NOT unload the module while a pair of cryptDecrypt_id, cryptEncrypt_id is still registered. Make sure that there are no device pairs left when you're about to unload the module. Unloading the module while there is a pair device floating around could put the kernel in a panic state, which we don't want.\
+\
+Hoep these instructions are clear enough.\
+Don't hesitate to ask any questions :).\
+\
+\
+\
+\
+\
+\
+}
