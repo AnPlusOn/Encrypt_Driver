@@ -41,11 +41,12 @@ static const struct file_operations fops_encrypt =
   {
     .owner = THIS_MODULE,
      .write = encrypt,
-    .compat_ioctl = encrypt_dev_ctl //(struct file * open_file, unsigned int request, unsigned long dev_info)
+    .unlocked_ioctl = encrypt_dev_ctl //(struct file * open_file, unsigned int request, unsigned long dev_info)
   };
-static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsigned long dev_info)
+static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsigned long dev_id)
 {
-  if (request == 0 || dev_info == 0)
+  
+  if (request == 0 || dev_id <0)
     {
       printk("Process attempting to acess address 0. Don't try to kill the kernel, please!");
       return -1;
@@ -53,8 +54,12 @@ static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsign
   switch(request)
     {
     case ENCRYPT_DEV_CODE:
-      current_key = device_table[dev_info].key_stream;
-      printk(KERN_INFO "current_key: %s", current_key);
+      {
+	//      printk("ENCRYPT_DEV_CODE case running");
+      current_key = device_table[dev_id].key_stream;
+      // printk( "current_key: %s", current_key);
+      // printk("key inside device table: %s", device_table[dev_id].key_stream);
+      }
       break;
     default:
       break;
@@ -104,7 +109,9 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
   switch(request)
     {
     case CREATE_DEV_CODE:
+      {
       create_pair(&user_dev_info, &fops_encrypt);
+      }
       break;
     case DESTROY_DEV_CODE:
       destroy_pair(&user_dev_info);

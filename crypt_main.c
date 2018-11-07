@@ -109,7 +109,7 @@ int main(int argc, char** argv)
       strcpy(dev_name1,ENCRYPT_DEV_PATH);
       strcat(dev_name1, argv[2]);
       printf("opening this file: %s\n", dev_name1);
-      int control_file = open(dev_name1, O_RDWR );
+      int control_file = open(dev_name1, O_RDWR  | O_NONBLOCK);
       if(control_file< 0)
 	{
 	  perror("open");
@@ -119,6 +119,7 @@ int main(int argc, char** argv)
       if( ioctl(control_file,ENCRYPT_DEV_CODE, id) < 0)
 	{
 	  perror("ioctl");
+	  close(control_file);
 	  return -1;
 	}
       sleep(3);
