@@ -4,11 +4,17 @@
 #define CRYPTCTL_NAME_SIZE 8
 #define CREATE_DEV_CODE 5001
 #define DESTROY_DEV_CODE 5002
+#define ENCRYPT_DEV_CODE 5003
+#define DECRYPT_DEV_CODE 5004
 #define ENCRYPT_DEV_NAME  "cryptEncrypt"
 #define DECRYPT_DEV_NAME "cryptDecrypt"
-#define ENCRYPTCTL_PATH "/dev/cryptctl" 
+#define ENCRYPTCTL_PATH "/dev/cryptctl"
+#define ENCRYPT_DEV_PATH "/dev/cryptEncrypt"
+#define  DECRYPT_DEV_PATH "/dev/cryptDecrypt"
 #define DESTROY "d"
 #define CREATE "c"
+#define ENCRYPT "en"
+#define DECRYPT "de"
 #define DEVICE_RECORDS_SIZE 128
 #define FREE_RECORD -1
 typedef struct

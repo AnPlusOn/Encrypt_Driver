@@ -101,6 +101,35 @@ int main(int argc, char** argv)
 	}
       printf("File closed. Done.\n");
     }
+  else if(strcmp(command, ENCRYPT) == 0)
+    {
+      int id  = atoi(argv[2]);
+      char dev_name1[1024];
+      char dev_name2[1024];
+      strcpy(dev_name1,ENCRYPT_DEV_PATH);
+      strcat(dev_name1, argv[2]);
+      printf("opening this file: %s\n", dev_name1);
+      int control_file = open(dev_name1, O_RDWR );
+      if(control_file< 0)
+	{
+	  perror("open");
+	  return -1;
+	}
+      printf("open file: %d\n", control_file);
+      if( ioctl(control_file,ENCRYPT_DEV_CODE, id) < 0)
+	{
+	  perror("ioctl");
+	  return -1;
+	}
+      sleep(3);
+      if( close(control_file)<0)
+	{
+	  perror("close");
+	  return -1;
+	}
+      printf("File closed. Done.\n");
+      
+    }
    return 0;
   //  return 0;
 }
