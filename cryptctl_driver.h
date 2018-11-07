@@ -6,6 +6,7 @@
 #define DESTROY_DEV_CODE 5002
 #define ENCRYPT_DEV_CODE 5003
 #define DECRYPT_DEV_CODE 5004
+#define CHANGE_KEY_DEV_CODE 5005
 #define ENCRYPT_DEV_NAME  "cryptEncrypt"
 #define DECRYPT_DEV_NAME "cryptDecrypt"
 #define ENCRYPTCTL_PATH "/dev/cryptctl"
@@ -15,6 +16,7 @@
 #define CREATE "c"
 #define ENCRYPT "en"
 #define DECRYPT "de"
+#define CHANGE_KEY "ck"
 #define DEVICE_RECORDS_SIZE 128
 #define FREE_RECORD -1
 typedef struct

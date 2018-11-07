@@ -21,6 +21,7 @@ static int create_pair(device_record*,const struct file_operations* );
 static long encrypt_dev_ctl(struct file *, unsigned int, unsigned long);
 static  int destroy_pair(device_record*);
 static ssize_t encrypt(struct file *, const char __user  *, size_t, loff_t*);
+static ssize_t decrypt(struct file * , char __user * , size_t , loff_t *);
 static int driver_major  = 0;
 static int driver_minor  = 0;
 static int Pair_Major = 0;
@@ -41,6 +42,7 @@ static const struct file_operations fops_encrypt =
   {
     .owner = THIS_MODULE,
      .write = encrypt,
+    .read = decrypt,
     .unlocked_ioctl = encrypt_dev_ctl //(struct file * open_file, unsigned int request, unsigned long dev_info)
   };
 static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsigned long dev_id)
@@ -64,6 +66,8 @@ static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsign
     default:
       break;
     }
+
+  return 0;
 }
 
 static ssize_t encrypt(struct file * user_file, const char __user *user_message, size_t message_size,  loff_t* inisde)
@@ -89,7 +93,29 @@ static ssize_t encrypt(struct file * user_file, const char __user *user_message,
   printk("encryption is done!");
   return 0;
 }
-
+static ssize_t decrypt(struct file * user_file, char __user * user_message, size_t message_size, loff_t *inisde)
+{
+  if(current_key == NULL)
+    {
+      printk(KERN_INFO "current_key is not valid");
+      return -1;
+    }
+  char message[message_size+ 1];
+  copy_from_user(&message,user_message, message_size);
+  message[message_size] = 0;
+  //  int message_size = strlen(message);
+  int key_size = strlen(current_key);
+  char msgcpy[message_size];
+  strcpy(msgcpy, message);
+  int i = 0;
+  for (i = 0; i < message_size; i++)
+    {
+      message[i] = msgcpy[i] - current_key[i%key_size];
+    }
+  copy_to_user(user_message, &message, strlen(message) + 1);
+  printk("decryption is done!");
+  return 0;
+}
 static int encrypt_open(struct inode * file_data, struct file * open_file)
 {
   return 0;
@@ -117,6 +143,9 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
     case DESTROY_DEV_CODE:
       destroy_pair(&user_dev_info);
       break;
+    case CHANGE_KEY_DEV_CODE:
+      memcpy(&(device_table[user_dev_info.device_id].key_stream), user_dev_info.key_stream, 32);
+      printk("key for this device: %s", (device_table[user_dev_info.device_id].key_stream));
       //    case ENCRYPT:
       //  current_key = device_table[dev_info].key_stream;
     default:

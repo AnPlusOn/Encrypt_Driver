@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include<unistd.h>
 
-
 int main(int argc, char** argv)
 {
   
@@ -118,7 +117,7 @@ int main(int argc, char** argv)
 	  return -1;
 	}
       printf("open file: %d\n", control_file);
-      if( ioctl(control_file,ENCRYPT_DEV_CODE, id) < 0)
+      if( ioctl(control_file,ENCRYPT_DEV_CODE, id) == -1)
 	{
 	  perror("ioctl");
 	  close(control_file);
@@ -140,6 +139,67 @@ int main(int argc, char** argv)
       printf("File closed. Done.\n");
       
     }
-   return 0;
+  else if(strcmp(command, DECRYPT) == 0)
+    {
+  int id  = atoi(argv[2]);
+  char dev_name1[1024];
+  char dev_name2[1024];
+  char input[3072];
+  strcpy(dev_name1,ENCRYPT_DEV_PATH);
+  strcpy( input ,argv[3]);
+  strcat(dev_name1, argv[2]);
+  printf("opening this file: %s\n", dev_name1);
+  int control_file = open(dev_name1, O_RDWR  | O_NONBLOCK);
+  if(control_file< 0)
+    {
+      perror("open");
+      return -1;
+    }
+  printf("open file: %d\n", control_file);
+  if( ioctl(control_file,ENCRYPT_DEV_CODE, id) < 0)
+    {
+      perror("ioctl");
+      close(control_file);
+      return -1;
+    }
+  //      sleep(3);
+  if(read(control_file, input, strlen(input)) == -1 )
+    {
+      perror("write");
+      close(control_file);
+      return -1;
+    }
+  if( close(control_file)<0)
+    {
+      perror("close");
+      return -1;
+    }
+  printf("write output:%s\n", input);
+  printf("File closed. Done.\n");
+
+}
+  else if(strcmp(command, CHANGE_KEY) == 0)
+    {
+      int id  = atoi(argv[2]);
+      device_record my_encrypt;
+      my_encrypt.device_id = id;
+      strcpy( my_encrypt.key_stream, argv[3]);
+      int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
+      if(control_file< 0)
+	{
+	  perror("open");
+	  return -1;
+	}
+      printf("open file: %d\n", control_file);
+      if( ioctl(control_file,CHANGE_KEY_DEV_CODE, &my_encrypt) < 0)
+	{
+	  perror("ioctl");
+	  return -1;
+	}
+      printf("key change done!\n");
+    }
+
+
+  return 0;
   //  return 0;
 }
