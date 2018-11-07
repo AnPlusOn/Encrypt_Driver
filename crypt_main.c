@@ -106,7 +106,9 @@ int main(int argc, char** argv)
       int id  = atoi(argv[2]);
       char dev_name1[1024];
       char dev_name2[1024];
+      char input[3072];
       strcpy(dev_name1,ENCRYPT_DEV_PATH);
+      strcpy( input ,argv[3]);
       strcat(dev_name1, argv[2]);
       printf("opening this file: %s\n", dev_name1);
       int control_file = open(dev_name1, O_RDWR  | O_NONBLOCK);
@@ -122,12 +124,19 @@ int main(int argc, char** argv)
 	  close(control_file);
 	  return -1;
 	}
-      sleep(3);
+      //      sleep(3);
+      if(write(control_file, input, strlen(input)) == -1 )
+	{
+	  perror("write");
+	  close(control_file);
+	  return -1;
+	}
       if( close(control_file)<0)
 	{
 	  perror("close");
 	  return -1;
 	}
+      printf("write output:%s\n", input);
       printf("File closed. Done.\n");
       
     }

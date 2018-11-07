@@ -86,6 +86,7 @@ static ssize_t encrypt(struct file * user_file, const char __user *user_message,
     message[i] = msgcpy[i] + current_key[i%key_size];
     }
   copy_to_user(user_message, &message, strlen(message) + 1);
+  printk("encryption is done!");
   return 0;
 }
 
