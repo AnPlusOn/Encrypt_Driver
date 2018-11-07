@@ -216,7 +216,9 @@ int init_module(void)
 void cleanup_module(void)
 {
   //  unregister_chrdev(driver_major, CRYPTCTL_NAME);
+  unregister_chrdev_region(cryptctl_dev, DEVICE_RECORDS_SIZE * 2 );
   destroy_char_dev(driver_major,driver_minor,&cryptctl);
+  class_destroy(crypt_class);
   printk("Device was unregustered. See ya later alligator");
   return 0;
 }

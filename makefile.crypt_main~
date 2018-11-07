@@ -1,0 +1,13 @@
+TARGET = crypt_main
+OBJECTS = crypt_main.o
+FLAGS = -Wall -fsanitize=address  -g
+
+$(TARGET): crypt_main.o
+	   gcc $(FLAGS) -o $@ $^
+clean:
+	rm -f $(TARGET) $(OBJECTS)
+%.o: %.c
+	gcc $(FLAGS) -c $<
+
+crypt_main.c:  cryptctl_driver.h
+ 

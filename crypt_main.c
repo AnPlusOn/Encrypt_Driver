@@ -7,6 +7,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include<unistd.h>
+#include "io_api.h"
+
+
+//int write_unicode(char* buffer´, int file
 
 int main(int argc, char** argv)
 {
@@ -107,7 +111,7 @@ int main(int argc, char** argv)
       char dev_name2[1024];
       char input[3072];
       strcpy(dev_name1,ENCRYPT_DEV_PATH);
-      strcpy( input ,argv[3]);
+      strcpy(input, argv[3]);
       strcat(dev_name1, argv[2]);
       printf("opening this file: %s\n", dev_name1);
       int control_file = open(dev_name1, O_RDWR  | O_NONBLOCK);
@@ -135,7 +139,13 @@ int main(int argc, char** argv)
 	  perror("close");
 	  return -1;
 	}
-      printf("write output:%s\n", input);
+      //      printf("write output:%s\n", input);
+      int i = 0;
+      while(i<strlen(input))
+	{
+	  printf("%d\n",input[i]);
+	  i++;
+	}
       printf("File closed. Done.\n");
       
     }
@@ -174,7 +184,13 @@ int main(int argc, char** argv)
       perror("close");
       return -1;
     }
-  printf("write output:%s\n", input);
+  //  printf("write output:%s\n", input);
+  int i =0;
+  while(i<strlen(input))
+    {
+      printf("%d\n",input[i]);
+      i++;
+    }
   printf("File closed. Done.\n");
 
 }
