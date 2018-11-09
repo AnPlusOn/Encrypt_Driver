@@ -233,5 +233,45 @@ int main(int argc, char** argv)
 	}
       printf("One day doom fell upon the world, and thus, all entities were wiped out.");
     }
+  else if(strcmp(command, RENAME) == 0)
+    {
+      char new_dev_id[1024];
+      char dev_name1[1024];
+      char dev_name2[1024];
+      strcpy(dev_name1,ENCRYPT_DEV_NAME );
+      strcpy(dev_name2,DECRYPT_DEV_NAME );
+      strcpy(new_dev_id, argv[3]);
+      strcat(dev_name1, new_dev_id);
+      strcat(dev_name2, new_dev_id);
+      device_record my_encrypt;
+      strcpy( my_encrypt.encrypt_name, dev_name1);
+      strcpy( my_encrypt.decrypt_name, dev_name2);
+      my_encrypt.device_id = atoi(new_dev_id);
+      my_encrypt.old_device_id  = atoi(argv[2]);
+      printf("device names %s, %s\n",my_encrypt.encrypt_name, my_encrypt.decrypt_name);
+      int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
+      if(control_file< 0)
+	{
+	  perror("open");
+	  return -1;
+	}
+      printf("open file: %d\n", control_file);
+      int new_id  = ioctl(control_file,RENAME_DEV_CODE, &my_encrypt);
+      if( new_id < 0)
+	{
+	  perror("ioctl");
+	  return -1;
+	}
+      // sleep(3);
+      if( close(control_file)<0)
+	{
+	  perror("close");
+	  return -1;
+	}
+      printf("A new device with id \"%d\" has been created.\n", new_id);
+      printf("Device with id \"%d\" has been deleted. ",  my_encrypt.old_device_id);
+      printf("File closed. Done.\n");
+    
+    }
   return 0;
 }

@@ -171,6 +171,7 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       {
       create_pair(&user_dev_info, &fops_encrypt);
       }
+      return user_dev_info.device_id;
       break;
     case DESTROY_DEV_CODE:
       destroy_pair(&user_dev_info);
@@ -184,6 +185,7 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       break;
     case RENAME_DEV_CODE:
       {
+	// check if id belongs to some other device
       int old_id;;
       old_id =  user_dev_info.old_device_id;
       int new_id;;
@@ -192,6 +194,7 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       destroy_pair(&device_table[old_id]);
       strcpy(user_dev_info.key_stream, device_table[old_id].key_stream );
       create_pair(&user_dev_info, &fops_encrypt);
+      return new_id;
       break;
       }
     default:

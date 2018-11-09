@@ -9,6 +9,9 @@
 #define CHANGE_KEY_DEV_CODE 5005
 #define RENAME_DEV_CODE 5006
 #define DOOM_DEV_CODE 5007
+#define DOES_EXIST 600
+#define DOES_NOT_EXIST 6001
+#define TABLE_CAPACITY_OVERFLOW 6002
 #define ENCRYPT_DEV_NAME  "cryptEncrypt"
 #define DECRYPT_DEV_NAME "cryptDecrypt"
 #define ENCRYPTCTL_PATH "/dev/cryptctl"
@@ -26,6 +29,7 @@
 typedef struct
 {
   char  free; //  1 if it's free, 0 otherwise.
+  short old_device_id; //useful for sawpping operations, like renaming devices
   short device_id; // This could be used as the index for that device!!! This will also be used as the minor of the device
   short major;
   int encrypt_minor;
@@ -37,6 +41,7 @@ typedef struct
   struct  cdev encrypt_device;
   struct  cdev decrypt_device;
   #endif
+  
 }device_record;
 
 #endif
