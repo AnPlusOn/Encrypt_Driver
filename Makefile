@@ -1,5 +1,5 @@
-driver:
-	make -f makefile.driver
-
-crypt_main:
-	make -f makefile.crypt_main
+obj-m := cryptctl_driver.o
+KDIR := /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd)
+default:
+	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules

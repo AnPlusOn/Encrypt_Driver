@@ -7,16 +7,20 @@
 #define ENCRYPT_DEV_CODE 5003
 #define DECRYPT_DEV_CODE 5004
 #define CHANGE_KEY_DEV_CODE 5005
+#define RENAME_DEV_CODE 5006
+#define DOOM_DEV_CODE 5007
 #define ENCRYPT_DEV_NAME  "cryptEncrypt"
 #define DECRYPT_DEV_NAME "cryptDecrypt"
 #define ENCRYPTCTL_PATH "/dev/cryptctl"
 #define ENCRYPT_DEV_PATH "/dev/cryptEncrypt"
 #define  DECRYPT_DEV_PATH "/dev/cryptDecrypt"
-#define DESTROY "d"
-#define CREATE "c"
-#define ENCRYPT "en"
-#define DECRYPT "de"
-#define CHANGE_KEY "ck"
+#define DESTROY "d" // destroys a device pair
+#define CREATE "c" // creates a device pair
+#define ENCRYPT "en" //encrypts input using a device with a certain id
+#define DECRYPT "de" //decrypts input using a device with a certain id
+#define CHANGE_KEY "ck" //changes the key of a specific device pair
+#define RENAME "re" //rename a device pair
+#define DOOM "doom" //destroys all of the devices 
 #define DEVICE_RECORDS_SIZE 128
 #define FREE_RECORD -1
 typedef struct

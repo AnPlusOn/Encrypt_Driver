@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include<unistd.h>
-#include "io_api.h"
+//#include "io_api.h"
 
 
 //int write_unicode(char* buffer´, int file
@@ -15,7 +15,7 @@
 int main(int argc, char** argv)
 {
   
-  if(argc<3)
+  if(argc<2)
     {
       printf("Not enough arguments\n");
       return -1;
@@ -55,17 +55,19 @@ int main(int argc, char** argv)
      return -1;
     }
   printf("open file: %d\n", control_file);
-   if( ioctl(control_file,CREATE_DEV_CODE, &my_encrypt) < 0)
+  int new_id  = ioctl(control_file,CREATE_DEV_CODE, &my_encrypt);
+  if( new_id < 0)
    {
       perror("ioctl");
       return -1;
    }
-   sleep(3);
+   // sleep(3);
    if( close(control_file)<0)
      {
        perror("close");
        return -1;
      }
+   printf("A new device with id \"%d\" has been created.", new_id);
    printf("File closed. Done.\n");
     }
   else if(strcmp(command, DESTROY) ==  0 )
@@ -96,7 +98,7 @@ int main(int argc, char** argv)
 	  perror("ioctl");
 	  return -1;
 	}
-      sleep(3);
+      //  sleep(3);
       if( close(control_file)<0)
 	{
 	  perror("close");
@@ -140,12 +142,12 @@ int main(int argc, char** argv)
 	  return -1;
 	}
       //      printf("write output:%s\n", input);
-      int i = 0;
-      while(i<strlen(input))
-	{
-	  printf("%d\n",input[i]);
-	  i++;
-	}
+      //      int i = 0;
+      // while(i<strlen(input))
+      //	{
+	  printf("%s\n",input);
+	  //  i++;
+	  //	}
       printf("File closed. Done.\n");
       
     }
@@ -213,9 +215,23 @@ int main(int argc, char** argv)
 	  return -1;
 	}
       printf("key change done!\n");
+      printf("New key: %s\n", my_encrypt.key_stream);
     }
-
-
+  else if(strcmp(command, DOOM) == 0)
+    {
+      device_record my_encrypt;
+      int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
+      if(control_file< 0)
+	{
+	  perror("open");
+	  return -1;
+	}
+      if( ioctl(control_file,DOOM_DEV_CODE, &my_encrypt) < 0)
+	{
+	  perror("ioctl");
+	  return -1;
+	}
+      printf("One day doom fell upon the world, and thus, all entities were wiped out.");
+    }
   return 0;
-  //  return 0;
 }
