@@ -277,6 +277,7 @@ void cleanup_module(void)
   unregister_chrdev(driver_major,CRYPTCTL_NAME);
   class_unregister(crypt_class);
   class_destroy(crypt_class);
+  Doomsday();
   vfree(device_table);
   printk("Device was unregustered. See ya later alligator.");
   return 0;
@@ -304,6 +305,20 @@ int  i  = 0;
       if(live_ids[i] == -1 )
 	{
 	  live_ids[i] = id;
+	  return 0;
+	}
+      i++;
+    }
+  return -1;
+}
+static int  remove_live_id(int id)
+{
+  int i =0;
+  while(i<DEVICE_RECORDS_SIZE)
+    {
+      if(live_ids[i] == id )
+	{
+	  live_ids[i] = -1;
 	  return 0;
 	}
       i++;
