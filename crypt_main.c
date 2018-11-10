@@ -67,7 +67,7 @@ int main(int argc, char** argv)
        perror("close");
        return -1;
      }
-   printf("A new device with id \"%d\" has been created.", new_id);
+   printf("A new device with id \" %d \" has been created.", new_id);
    printf("File closed. Done.\n");
     }
   else if(strcmp(command, DESTROY) ==  0 )
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
       //      int i = 0;
       // while(i<strlen(input))
       //	{
-	  printf("%s\n",input);
+      printf("Encrypted message: %s\n",input);
 	  //  i++;
 	  //	}
       printf("File closed. Done.\n");
@@ -175,6 +175,7 @@ int main(int argc, char** argv)
       return -1;
     }
   //      sleep(3);
+  printf("input received:%s", input);
   if(read(control_file, input, strlen(input)) == -1 )
     {
       perror("write");
@@ -187,12 +188,10 @@ int main(int argc, char** argv)
       return -1;
     }
   //  printf("write output:%s\n", input);
-  int i =0;
-  while(i<strlen(input))
-    {
-      printf("%d\n",input[i]);
-      i++;
-    }
+  //  int i =0;
+  // while(i<strlen(input))
+        printf("Decrypted message: %s\n",input);
+	//  i++;
   printf("File closed. Done.\n");
 
 }

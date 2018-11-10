@@ -11,29 +11,6 @@
 #include "kernel_space.h"
 #include "cryptctl_driver.h"
 
-/*
-
-
-struct class {
-  const char * name;
-  struct module * owner;
-  struct class_attribute * class_attrs;
-  const struct attribute_group ** dev_groups;
-  struct kobject * dev_kobj;
-  int (* dev_uevent) (struct device *dev, struct kobj_uevent_env *env);
-  char *(* devnode) (struct device *dev, umode_t *mode);
-  void (* class_release) (struct class *class);
-  void (* dev_release) (struct device *dev);
-  int (* suspend) (struct device *dev, pm_message_t state);
-  int (* resume) (struct device *dev);
-  const struct kobj_ns_type_operations * ns_type;
-  const void *(* namespace) (struct device *dev);
-  const struct dev_pm_ops * pm;
-  struct subsys_private * p;
-}; 
-
-*/
-
 //#include<stdio.h>
 //#inc
 static int encrypt_open(struct inode *, struct file *);
@@ -138,14 +115,14 @@ static ssize_t decrypt(struct file * user_file, char __user * user_message, size
   int key_size = strlen(current_key);
   char msgcpy[message_size];
   memset(msgcpy, '\0', message_size+1);
-  strcpy(msgcpy, message);
+  strncpy(msgcpy, message, message_size);
   int i = 0;
   for (i = 0; i < message_size; i++)
     {
-      message[i] = ( (msgcpy[i] - (current_key[i%key_size]+190))%95 )+(32);
+      message[i] = ( ( msgcpy[i] - current_key[i%key_size]+190)%95 )+(32);
     }
   copy_to_user(user_message, &message, strlen(message) + 1);
-  printk("decryption is done!");
+printk("decryption is done!:%s",message );
   return 0;
 }
 static int encrypt_open(struct inode * file_data, struct file * open_file)
@@ -170,9 +147,18 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
     case CREATE_DEV_CODE:
       {
       create_pair(&user_dev_info, &fops_encrypt);
+      if(does_id_exist(user_dev_info.device_id) == DOES_EXIST)
+	{
+	  return DOES_EXIST;
+	}
+      return user_dev_info.device_id;
       }
       break;
     case DESTROY_DEV_CODE:
+      if(does_id_exist(user_dev_info.device_id) == DOES_NOT_EXIST)
+	{
+	  return DOES_NOT_EXIST;
+	}
       destroy_pair(&user_dev_info);
       break;
     case CHANGE_KEY_DEV_CODE:
@@ -188,6 +174,10 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       old_id =  user_dev_info.old_device_id;
       int new_id;;
       new_id = user_dev_info.device_id;
+      if(does_id_exist(new_id) == DOES_EXIST)
+	{
+	  return DOES_EXIST;
+	}
       printk(KERN_INFO "old id:%d, new_id:%d", old_id, new_id);
       destroy_pair(&device_table[old_id]);
       strcpy(user_dev_info.key_stream, device_table[old_id].key_stream );
