@@ -1,0 +1,412 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 CourierNewPSMT;\f2\fnil\fcharset0 Menlo-Regular;
+\f3\fnil\fcharset0 Menlo-Bold;\f4\fnil\fcharset0 Menlo-BoldItalic;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red47\green180\blue29;\red0\green0\blue0;
+}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c20238\c73898\c14947;\csgray\c0;
+}
+\margl1440\margr1440\vieww28600\viewh15460\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf0 \
+CS416 Operating Systems, Fall 2018\
+
+\b Assignment #2
+\b0 : Encrypted \'93Pipe\'94 Pseudo-Device Driver\
+\
+Group:\
+Lorenzo Gomez (netid: lbg65)\
+Anton Ryjov (netid: aar188)\
+Michelle Dry-Moran (netid: mdry)\
+\
+NOTE: The instructions for running the code is the 3rd Section on this report.\
+\
+*********************************************************************************************\
+*********************************************************************************************\
+*********************************************************************************************
+\f1\fs20 \cf2 \expnd0\expndtw0\kerning0
+\
+
+\f0\b\fs36 \cf0 \kerning1\expnd0\expndtw0 Experience Writing Code
+\b0\fs26 \
+\
+This experience was challenging as we did not understand much about devices / ioctl.\
+The three of us were all fairly well versed in writing in c; however understanding how to \
+create devices was difficult.\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs20 \cf2 \expnd0\expndtw0\kerning0
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural\partightenfactor0
+
+\f0\b\fs26 \cf0 \kerning1\expnd0\expndtw0 Key Issues that were encountered
+\b0 \
+\
+PROBLEM: We initially had issues understanding the way that the kernel represents devices\
+RESOLVED BY: Reading the documentation that was given, googling what\'92s out there, and trial and error\
+\
+PROBLEM: We crashed the kernel a couple of times\
+RESOLVED BY: sending \'93help\'94 emails to our lovely Rutgers IT guys to rebuild kernel.\
+\
+PROBLEM: When deleting the device, an error would occur when rebuilding the kernel saying that it already existed. \
+Somehow we are not properly deleting the device.  When we could not figure out the issue - we had to use sudo reboot to fix this. \
+We knew there are multiple steps for delete and tried them in different orders - all which did not work.\
+RESOLVED BY: Issue turned out to be the Makefile.  We were using an old version of makefile.\
+\
+PROBLEM: Cipher was not printing out correctly and changing randomly.\
+RESOLVED BY: We did not initiate variables - after memsetting variables to NULL (and ensuring strings were NULL terminated),\
+the cipher worked correctly without errors.\
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 *********************************************************************************************\
+*********************************************************************************************\
+*********************************************************************************************
+\b \ul \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural\partightenfactor0
+
+\fs36 \cf0 \ulnone Description of Implementation
+\b0\fs26 \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\b \cf0 1) Cipher Algorithm
+\b0 \
+\
+We implemented Vigenere Cipher, using a 
+\b key
+\b0  string with \ul max length of 32 characters\ulnone .\
+The key is a string such that any ASCII character between ASCII 32 (space) to ASCII 126 (tilde ~) can be used in the key.\
+	* ASCII 32 will shift a letter by 0\
+	* ASCII 126 will shift a letter by 94 (essentially 126-32)\
+	* all characters in between will shift accordingly between 0 and 94 based on ASCII order\
+If a character is shifted past ASCII 126, the shift will wrap back around to ASCII 32.\
+	** Example: If you want to encode the letter z by a key of 1 (ASCII 49),\
+	then you would be shifting that letter 17 spaces (49-32), such that z would turn into ASCII 44 (or comma ,)\
+	because z is ASCII 122, you add 4 and you get to 126, add 1 more, you get back to ASCII 32, and then you have 12 more which brings you to ASCII 44.\
+\
+Additionally, since this is a key string, each character in the key will shift a letter in the message to be encoded, such that:\
+	* the first character in the key will encode the first character in the message\
+	* the second character in the key will encode the second character in the message\
+	* the nth character in the key will encode the nth character in the message\
+If there are more characters in the message than there are in the key, then the key will start again, such that:\
+	* the nth + 1 character in the message will be encoded with the first character in the key\
+	* the nth + 2 character in the message will be encoded with the second character in the key\
+	* the nth + nth character in the message will be encoded with the nth character in the key\
+This will repeat until there are no longer any characters in the message to be encoded.\
+\
+If there are less characters in the message than there are characters in the key, then the key will only use the max characters of the message - and any additional key characters will be dropped.  Example: Message is \'93hi\'94 and key is \'9312345\'94.  Since the characters in messages are only two, then the characters 12 of the key will be used, and 345 will be dropped.\
+\
+\
+
+\b 2) Overall Control Flow within Driver
+\b0 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \expnd0\expndtw0\kerning0
+\
+1. We run: 
+\b sudo insmod cryptctl_driver.ko
+\b0 \
+	This calls init_module which does the following:\
+		* institiate and initiate the device_table (struct device_record) which provides an interface to allow communication between\
+		  the user space and the kernel space.\
+		* creates device controller/driver\
+\
+2. The device table is created as follows:\
+	typedef struct\
+	\{\
+	  char  free; //  1 if it's free, 0 otherwise.                                                                                                                                       \
+	  short old_device_id; //useful for swapping operations, like renaming devices                                                                                                       \
+	  short device_id; // This could be used as the index for that device!!! This will also be used as the minor of the device                                                           \
+	  short major;\
+	  int encrypt_minor;\
+	  int decrypt_minor;\
+	  char encrypt_name[16]; // the user takes care of this                                                                                                                              \
+	  char decrypt_name[16]; //the user takes care of this                                                                                                                               \
+	  char key_stream[32];  //Size to be decided; the user takes care of this                                                                                                            \
+	  #ifdef KERNEL\
+	  struct  cdev encrypt_device;\
+	  struct  cdev decrypt_device;\
+	  #endif\
+	\}device_record;\
+\pard\pardeftab720\partightenfactor0
+\cf0 \kerning1\expnd0\expndtw0 \
+3. We run: 
+\b sudo ./crypt_main <command> <args>
+\b0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \ul \ulc0 \
+configuration_ioctl():\ulnone \
+	case: CREATE_DEV_CODE \'85. Creates device pairs\
+	case: DESTROY_DEV_CODE \'85. Destroys a specific device pairs (given a device number)\
+	case: CHANGE_KEY_DEV_CODE \'85. Changes the key in the devices\
+	case: DOOM_DEV \'85. Destroys ALL device pairs\
+	case: RENAME_DEV_CODE \'85. Renames a given device pair to a new device name\
+\ul \
+encrypt_ioctl():\ulnone \
+	case: ENCRYPT_DEV_CODE \'85. Sets the global current_key for encrypt/decrypt operations.\
+\
+\ul cleanup_module\ulnone : \
+	* gives back resources to kernel \
+	* destroys all pairs by calling Doomsday\
+	* destroys driver\
+\
+*********************************************************************************************\
+*********************************************************************************************\
+*********************************************************************************************\
+
+\b\fs36 Instructions for Running Module
+\b0\fs26 \
+\
+1. make/compile kernel module with the "make" command\
+\
+2. insert the module with "sudo insmod cryptctl_driver.ko"\
+\
+3. Check the kernel's log with the "dmesg" command:\
+	If the module was loaded successfully, you should see something like this at the end of the log:\
+				
+\f2\fs22 \cf3 \CocoaLigature0 [  163.501375] 
+\f3\b \cf4 cdev_init
+\f2\b0 \
+
+\f0\fs26 \cf0 \CocoaLigature1 				
+\f2\fs22 \cf3 \CocoaLigature0 [  163.501381] 
+\f3\b \cf4 cdev_add
+\f2\b0 \
+
+\f0\fs26 \cf0 \CocoaLigature1 				
+\f2\fs22 \cf3 \CocoaLigature0 [  163.502710] \cf4 I think the device should be registered now:244, 0\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\
+\
+The numbers inside the [] are just timestamps; these will be different for you.\
+If you don't see these messages anywhere, then reboot your kernel with "sudo reboot" 
+\f4\i\b immediately
+\f2\i0\b0 .
+\f0\fs26 \cf0 \CocoaLigature1 \
+\
+4. Assuming that you saw the right log messages, the driver(cryptctl) should be registered with the kernel. To confirm that the driver is loaded/registered in the kernel, run the following commands:\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	4a.\'94ls /dev":\
+		This will show you a list of the special files that are linked to drivers and devces. In this directory you should see a file with the name "crypctl".\
+		This means that there is a file associated with the cryptctl devices and our user program (crypt_main.c) can open it and send commands\
+		to it via ioctl() calls.\
+\
+	4b.\'94cat /proc/devices":\
+		This file has all of the drivers registered in the system. After you insert the module, you should see the name of the device along with its major number.\
+		It should look something like "cryptctl registration_number". In the machine we are using, the major number has always been 244.\
+		However, keep in mind, that if the kernel deems it so this could be a different number. That major_number is the major number\
+		for our driver and all of the devices that the driver manages. As you can see in the third log message from step 3\
+		the string "
+\f2\fs22 \cf4 \CocoaLigature0 I think the device should be registered now:244, 0
+\f0\fs26 \cf0 \CocoaLigature1 "  has a 244 followed by a 0.\
+		These two are the major and minor. In this case, the major is 244 and the minor is 0.\
+		The minor should always be 0 as it is the first device that is registered with this major number\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	4c. "ls /sys/dev/char":\
+		This directory is the MOST IMPORTANT of the three. This is the directory that the kernel uses to keep track of ALL of the devices\
+		currently registered in the system.\
+		When you look at the contents of this directory, there should a bunch of special directories with the format "major: minor".\
+		These directories represent all of the devices currently registered in the system. After loading the kernel, you should see\
+		the major number that you saw in /proc/devices.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 \
+5. Now we're ready to use our user program. Compile the user program with "gcc crypt_main.c".\
+Once you've compiled crypt_main.c, run the executable with "sudo\'94:\
+\
+	
+\b 5A) CREATE
+\b0 \
+		To create a new device pair, we enter data in the following format "sudo ./a.out c id key_stream\'94\
+		\ul command\ulnone \
+			
+\b c
+\b0 			\'85 creates a new device pair (can create a total 128 device pairs - or 256 devices) \
+		\ul arguments\
+			
+\b \ulnone id
+\b0 			\'85 id is a number between 0 and 127 (if a device number has already been taken,\
+						    the program will let the user know that device already exists)\
+			
+\b key_stream
+\b0 	\'85 a key string that the user wants to use (Note: the key_string has to be enclosed by quotation marks)\
+						     example keys \'93123\'94   or   \'93ab1xz\'94\
+						    The key_stream can be up to a max of 32 characters, with any ASCII character between\
+						    ASCII 32 (space) to ASCII 126 (tilde ~), such that ASCII 32 shifts 0 spaces, and ASCII 126 shifts 94 spaces  \
+\
+		EXAMPLE: 	sudo ./a.out c 0 \'93123" \
+					- The  driver will create the following devices with key 123:\
+						/dev/cryptEncrypt0\
+						/dev/cryptDecrypt0\
+\
+		To confirm that the devices have been created/registered:\
+			* Check all of the directories from Step 4.\
+			* You should also see log messages similar to the ones in step 1.\
+\
+	
+\b 5B) DESTROY
+\b0 \
+		To destroy a single specific device pair, we enter data in the following format "sudo ./a.out d id\'94\
+		\ul command\ulnone \
+			
+\b d
+\b0 			\'85 destroys a single device pair (the device designated by id) \
+		\ul argument\
+			
+\b \ulnone id
+\b0 			\'85 id is a number between 0 and 127 (of a device that already exists)\
+\
+		EXAMPLE: 	sudo ./a.out d 1 \
+					- The  driver will destroy the following devices:\
+						/dev/cryptEncrypt1\
+						/dev/cryptDecrypt1\
+\
+		To confirm that the devices have been destroyed:\
+			* Check all of the directories and files from step 4.\
+			* There should be no trace of your cryptEncrypt_id and cryptDecrypt_id devices\
+			* Your cryptctl with minor number 0 device SHOULD still be there as we have not destroyed/unregistered it yet\
+\
+	
+\b 5C) ENCRYPT
+\b0 \
+		To encrypt a message, we enter data in the following format "sudo ./a.out en id message\'94\
+		\ul command\ulnone \
+			
+\b en
+\b0 			\'85 encrypts a given message (message is only limited in size by the space of the control prompt) \
+		\ul arguments\
+			
+\b \ulnone id
+\b0 			\'85 id is a number between 0 and 127 (NOTE: the device has to be created first before it can be used to encrypt the message)\
+			
+\b message	
+\b0 	\'85 a message that the user wants to have encrypted.  (Note: the message has to be enclosed by quotation marks)\
+						     example message:	\'93Hi, how are you?\'94\
+						    The message is limited in size by the size of the command line.\
+						    The message should only consist of characters between ASCII 32 (space) to ASCII 126 (tilde ~). \
+\
+		EXAMPLE: 	sudo ./a.out en 0 \'93abcdefg\'94\
+					If id 0 contains key_string \'9312\'94, then:\
+					the encryption of abcdefg would be rttvvxx\
+\
+	
+\b 5D) DECRYPT
+\b0 \
+		To decrypt a message, we enter data in the following format "sudo ./a.out de id message\'94\
+		\ul command\ulnone \
+			
+\b de
+\b0 			\'85 decrypts a given message (message is only limited in size by the space of the control prompt)\
+		\ul arguments\
+			
+\b \ulnone id
+\b0 			\'85 id is a number between 0 and 127 (NOTE: the device has to be created first before it can be used to decrypt the message)\
+			
+\b message	
+\b0 	\'85 an ecrypted message that the user wants to have decrypted.  (Note: the message has to be enclosed by quotation marks)\
+						     example encrypted message:      \'93Zljg 6d3 r4saXZw\'94\
+						    The message is limited in size by the size of the command line.\
+						    The message should only consist of characters between ASCII 32 (space) to ASCII 126 (tilde ~). \
+\
+		EXAMPLE: 	sudo ./a.out de 0 \'93rttvvxx\'94\
+					If id 0 contains key_string \'9312\'94, then:\
+					the decryption of rttvvxx would be abcdefg\
+\
+	
+\b 5E) DOOMSDAY
+\b0 \
+		To  annihilate (wipe out / destroy) ALL of the device pairs, we enter data in the following format "sudo ./a.out doom\'94\
+		\ul command\ulnone \
+			
+\b doom
+\b0 		\'85 destroys all device pairs \
+		\ul argument\
+			\ulnone N/A			\'85 there are no arguments for doomsday\
+\
+		EXAMPLE: 	sudo ./a.out doom\
+					- The  driver will destroy all devices:\
+						/dev/cryptEncrypt[id]\
+						/dev/cryptDecrypt[id]\
+					  \'85 such that [id] is a number from 0 to 127\
+\
+		To confirm that the devices have been destroyed:\
+			* Check all of the directories and files from step 4.\
+			* There should be no trace of your cryptEncrypt_id and cryptDecrypt_id devices\
+			* Your cryptctl with minor number 0 device SHOULD still be there as we have not destroyed/unregistered it yet\
+\
+\
+6. EXTRA CREDIT - Change the key of a device pair / Rename a device pair\
+	Compile the user program with "gcc crypt_main.c".  Once you've compiled crypt_main.c, run the executable with "sudo\'94:\
+\
+	
+\b 6A) CHANGE
+\b0 \
+		To change a key_string to a new key_string for a given device, we enter data in the following format "sudo ./a.out ck id key_stream\'94\
+		\ul command\ulnone \
+			
+\b ck
+\b0 			\'85 changes the key on an already created device pair \
+		\ul arguments\
+			
+\b \ulnone id
+\b0 			\'85 id is a number between 0 and 127, such that the device pair has already been created\
+			
+\b key_stream
+\b0 	\'85 the new key string that the user wants to use (Note: the key_string has to be enclosed by quotation marks)\
+						     example keys \'93123\'94   or   \'93ab1xz\'94\
+						    The key_stream can be up to a max of 32 characters, with any ASCII character between\
+						    ASCII 32 (space) to ASCII 126 (tilde ~), such that ASCII 32 shifts 0 spaces, and ASCII 126 shifts 94 spaces  \
+\
+		EXAMPLE: 	sudo ./a.out ck 0 \'93123" \
+					- The driver will change the old key to a new key of 123 in the following devices:\
+						/dev/cryptEncrypt0\
+						/dev/cryptDecrypt0\
+\
+	
+\b 6B) RENAME
+\b0 \
+		To rename the id of a given device pair, we enter data in the following format "sudo ./a.out re old_id new_id\'94\
+		\ul command\ulnone \
+			
+\b re
+\b0 			\'85 changes the key on an already created device pair \
+		\ul arguments\
+			
+\b \ulnone old_id
+\b0 		\'85 old_id is a number between 0 and 127, such that the device pair has already been created\
+			
+\b new_id
+\b0 		\'85 new_id is a number between 0 and 127, such that this device pair id has not already been used\
+	\
+		EXAMPLE: 	sudo ./a.out 0 1 \
+					- The driver will change the old device pairs\
+					  From:\
+						/dev/cryptEncrypt0\
+						/dev/cryptDecrypt0\
+					  To: 	\
+						/dev/cryptEncrypt1\
+						/dev/cryptDecrypt1\
+\
+		Note: The key will stay the same.  Essentially this command will destroy the "old" device and create a new one with the "new" name.\
+\
+\
+7. Last but not least we unload the module.\
+\
+	Unload the module with "sudo rmmod cryptctl_driver". This will unregister the driver device--your cryptctl driver.\
+\
+NOTE: DO NOT unload the module while a pair of cryptDecrypt_id, cryptEncrypt_id is still registered. Make sure that there are no device pairs left when you're about to unload the module. Unloading the module while there is a pair device floating around could put the kernel in a panic state, which we don't want.\
+\
+Hope these instructions are clear enough.\
+Don't hesitate to ask any questions\
+\
+THANKS!!!\
+\
+END OF REPORT\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 *********************************************************************************************\
+*********************************************************************************************\
+*********************************************************************************************\
+}
