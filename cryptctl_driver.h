@@ -28,6 +28,7 @@
 #define FREE_RECORD -1
 typedef struct
 {
+  int error_code;
   char  free; //  1 if it's free, 0 otherwise.
   short old_device_id; //useful for sawpping operations, like renaming devices
   short device_id; // This could be used as the index for that device!!! This will also be used as the minor of the device

@@ -55,19 +55,26 @@ int main(int argc, char** argv)
      return -1;
     }
   printf("open file: %d\n", control_file);
-  int new_id  = ioctl(control_file,CREATE_DEV_CODE, &my_encrypt);
-  if( new_id < 0)
-   {
+  long new_id  = ioctl(control_file,CREATE_DEV_CODE, &my_encrypt);
+  // if( new_id < 0)
+  // {
+  //   perror("ioctl");
+  //    return -1;
+  //}
+  if(my_encrypt.error_code!= 0)
+    {
+      printf("This device already exists. Use a different id.\n");
       perror("ioctl");
       return -1;
-   }
+    }
    // sleep(3);
    if( close(control_file)<0)
      {
        perror("close");
        return -1;
      }
-   printf("A new device with id \" %d \" has been created.", new_id);
+  
+   printf("A new device with id \" %ld \" has been created.", my_encrypt.device_id);
    printf("File closed. Done.\n");
     }
   else if(strcmp(command, DESTROY) ==  0 )
@@ -87,17 +94,22 @@ int main(int argc, char** argv)
       strcat(dev_name1, argv[2]);
       strcat(dev_name2, argv[2]);
       int control_file = open( ENCRYPTCTL_PATH, O_RDWR );
-      if(control_file< 0)
-	{
-	  perror("open");
-	  return -1;
-	}
+      //if(my_encrypt.error_code!= 0)
+      //	{
+	  // printf("This device does not exist. Use a different id.\n");
+	  // perror("ioctl");
+	  // return -1;
+	  ///	}
       printf("open file: %d\n", control_file);
-      if( ioctl(control_file,DESTROY_DEV_CODE, &my_encrypt) < 0)
+      ioctl(control_file,DESTROY_DEV_CODE, &my_encrypt);
+      if(my_encrypt.error_code!= 0)
 	{
+	  printf("This device already exists. Use a different id.\n");
 	  perror("ioctl");
 	  return -1;
 	}
+       
+	 
       //  sleep(3);
       if( close(control_file)<0)
 	{
@@ -123,12 +135,13 @@ int main(int argc, char** argv)
 	  return -1;
 	}
       printf("open file: %d\n", control_file);
-      if( ioctl(control_file,ENCRYPT_DEV_CODE, id) == -1)
-	{
-	  perror("ioctl");
-	  close(control_file);
-	  return -1;
-	}
+      ioctl(control_file,ENCRYPT_DEV_CODE, &id);
+  if(id!= 0)
+    {
+      printf("This device does not exist. Use a different id.\n");
+      perror("ioctl");
+      return -1;
+    }
       //      sleep(3);
       if(write(control_file, input, strlen(input)) == -1 )
 	{
@@ -168,8 +181,10 @@ int main(int argc, char** argv)
       return -1;
     }
   printf("open file: %d\n", control_file);
-  if( ioctl(control_file,ENCRYPT_DEV_CODE, id) < 0)
+  ioctl(control_file,ENCRYPT_DEV_CODE, &id);
+  if(id!= 0)
     {
+      printf("This device does not exist. Use a different id.\n");
       perror("ioctl");
       close(control_file);
       return -1;
@@ -187,12 +202,8 @@ int main(int argc, char** argv)
       perror("close");
       return -1;
     }
-  //  printf("write output:%s\n", input);
-  //  int i =0;
-  // while(i<strlen(input))
         printf("Decrypted message: %s\n",input);
-	//  i++;
-  printf("File closed. Done.\n");
+       printf("File closed. Done.\n");
 
 }
   else if(strcmp(command, CHANGE_KEY) == 0)
@@ -208,9 +219,12 @@ int main(int argc, char** argv)
 	  return -1;
 	}
       printf("open file: %d\n", control_file);
-      if( ioctl(control_file,CHANGE_KEY_DEV_CODE, &my_encrypt) < 0)
+      ioctl(control_file,CHANGE_KEY_DEV_CODE, &my_encrypt);
+      if(my_encrypt.error_code!= 0)
 	{
+	  printf("This device does not exist. Use a different id.\n");
 	  perror("ioctl");
+	  close(control_file);
 	  return -1;
 	}
       printf("key change done!\n");
@@ -256,9 +270,11 @@ int main(int argc, char** argv)
 	}
       printf("open file: %d\n", control_file);
       int new_id  = ioctl(control_file,RENAME_DEV_CODE, &my_encrypt);
-      if( new_id < 0)
+      if(my_encrypt.error_code!= 0)
 	{
+	  printf("Use a different id.\n");
 	  perror("ioctl");
+	  close(control_file);
 	  return -1;
 	}
       // sleep(3);
@@ -267,7 +283,7 @@ int main(int argc, char** argv)
 	  perror("close");
 	  return -1;
 	}
-      printf("A new device with id \"%d\" has been created.\n", new_id);
+      printf("A new device with id \"%d\" has been created.\n", my_encrypt.device_id);
       printf("Device with id \"%d\" has been deleted. ",  my_encrypt.old_device_id);
       printf("File closed. Done.\n");
     

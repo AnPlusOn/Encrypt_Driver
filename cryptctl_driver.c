@@ -10,9 +10,6 @@
 #include<linux/kdev_t.h>
 #include "kernel_space.h"
 #include "cryptctl_driver.h"
-
-//#include<stdio.h>
-//#inc
 static int encrypt_open(struct inode *, struct file *);
 static int create_char_dev(unsigned int ,unsigned int , const char* ,struct cdev*, const struct  file_operations* );
 static int destroy_char_dev( unsigned int, unsigned int , struct cdev* );
@@ -52,7 +49,10 @@ static const struct file_operations fops_encrypt =
 
 static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsigned long dev_id)
 {
-  
+
+  int error_code = 0;
+  int my_id  =0;
+  copy_from_user((int*) &my_id,(int*) dev_id, sizeof(int));
   if (request == 0 || dev_id <0)
     {
       printk("Process attempting to acess address 0. Don't try to kill the kernel, please!");
@@ -63,7 +63,16 @@ static long encrypt_dev_ctl(struct file* open_file, unsigned int request, unsign
     case ENCRYPT_DEV_CODE:
       {
 	//      printk("ENCRYPT_DEV_CODE case running");
-      current_key = device_table[dev_id].key_stream;
+	if(does_id_exist(my_id) == DOES_NOT_EXIST)
+	  {
+	    error_code = DOES_NOT_EXIST;
+	    // copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+	    copy_to_user((int*)dev_id, &error_code, sizeof(int));
+	    printk("doed not exist: %d\n", error_code);
+	    return -1;
+	  }
+	copy_to_user((int*)dev_id, &error_code, sizeof(int));
+      current_key = device_table[my_id].key_stream;
       // printk( "current_key: %s", current_key);
       // printk("key inside device table: %s", device_table[dev_id].key_stream);
       }
@@ -146,23 +155,49 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
     {
     case CREATE_DEV_CODE:
       {
+	if(does_id_exist(user_dev_info.device_id) == DOES_EXIST)
+	  {
+	    user_dev_info.error_code = DOES_EXIST;
+	    copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+	    return -1;
+	  }
       create_pair(&user_dev_info, &fops_encrypt);
-      if(does_id_exist(user_dev_info.device_id) == DOES_EXIST)
-	{
-	  return DOES_EXIST;
-	}
-      return user_dev_info.device_id;
+      user_dev_info.error_code = 0;
+      
+      copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+      return 0;
       }
       break;
     case DESTROY_DEV_CODE:
       if(does_id_exist(user_dev_info.device_id) == DOES_NOT_EXIST)
 	{
-	  return DOES_NOT_EXIST;
+	  user_dev_info.error_code = DOES_NOT_EXIST;
+	  // copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+	  copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+	  
+	  return -1;
 	}
       destroy_pair(&user_dev_info);
+      user_dev_info.error_code = 0;
+      //      copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+      copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+      
       break;
     case CHANGE_KEY_DEV_CODE:
+      {
+      if(does_id_exist(user_dev_info.device_id) == DOES_NOT_EXIST)
+	{
+	  user_dev_info.error_code = DOES_NOT_EXIST;
+	  //  copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+	  copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));	  
+
+	  return -1;
+	}
+      }
       memcpy(device_table[user_dev_info.device_id].key_stream, user_dev_info.key_stream, 32);
+      user_dev_info.error_code = 0;
+      //  copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+      copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
       printk("key for this device: %s", (device_table[user_dev_info.device_id].key_stream));
       break;
     case DOOM_DEV_CODE:
@@ -176,12 +211,21 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
       new_id = user_dev_info.device_id;
       if(does_id_exist(new_id) == DOES_EXIST)
 	{
-	  return DOES_EXIST;
+	  user_dev_info.error_code = DOES_EXIST;
+	  //	  copy_to_user(&dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+	  copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+	  
+	  return -1;
 	}
       printk(KERN_INFO "old id:%d, new_id:%d", old_id, new_id);
       destroy_pair(&device_table[old_id]);
       strcpy(user_dev_info.key_stream, device_table[old_id].key_stream );
       create_pair(&user_dev_info, &fops_encrypt);
+      user_dev_info.error_code = 0;
+      // copy_to_user(dev_info, (const device_record*) user_dev_info, sizeof(device_record));
+      copy_to_user((const device_record*) dev_info, &user_dev_info, sizeof(device_record));
+      
+      return 0;
       break;
       }
     default:
@@ -195,14 +239,17 @@ static long char_dev_ctl(struct file * open_file, unsigned int request, unsigned
 static int does_id_exist(int id)
 {
   int i = 0;
+  printk("id passed to exist: %d\n", id);
   while(i<DEVICE_RECORDS_SIZE)
     {
+      printk("current value for does_id_exist: %d\n", live_ids[i]);
       if(live_ids[i] == -1)
 	{
 	  return DOES_NOT_EXIST;
 	}
       if(live_ids[i] == id )
 	{
+	  // printk()
 	  return DOES_EXIST;
 	}
       i++;
