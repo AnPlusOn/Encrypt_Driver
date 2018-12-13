@@ -1,4 +1,4 @@
-Linux Driver Engineer: Lorenzo Gomez                                                                                       Encryption Engineers: Anton Ryjov, Michelle Dry-Moran                                                                 Documentation by Michelle Dry-Moran
+Linux Driver Engineer: Lorenzo Gomez                                                                                       Encryption Engineers: Anton Ryjov(https://github.com/AnPlusOn) , Michelle Dry-Moran                                                                 Documentation by Michelle Dry-Moran
 
 
 
