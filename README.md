@@ -1,3 +1,8 @@
+MapReduce Engineer: Lorenzo Gomez()
+Encryption Engineers: Anton Ryjov, Michelle Dry-Moran
+Documentation by Michelle Dry-Moran
+
+
 
 NOTE:  Please see README_CS416_Proj2.rtf for the formatted version of this README file:
 
